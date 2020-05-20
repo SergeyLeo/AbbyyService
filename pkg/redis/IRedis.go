@@ -81,3 +81,8 @@ func HGet(hash string, field string, value *string) error {
 	err := pool.Do(slRedis.Cmd(value, "HGET", hash, field))
 	return err
 }
+
+func HGetAll(hash string, values *[]string) error {
+	err := pool.Do(slRedis.Cmd(values, "HGETALL", hash))
+	return err
+}

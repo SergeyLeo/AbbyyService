@@ -12,6 +12,7 @@ import (
 	slLogger "kallaur.ru/libs/abbyyservice/pkg/logger"
 	slRedis "kallaur.ru/libs/abbyyservice/pkg/redis"
 	"os"
+	"strings"
 )
 
 // Так как это один пакет с инсталлером. Переменные объявлены там
@@ -96,7 +97,7 @@ func runJob() {
 			_ = slRedis.AddBadWord(word)
 			continue
 		}
-		err = slRedis.AddJsonData(response.Body, word)
+		err = slRedis.AddJsonData(response.Body, strings.ToLower(word))
 		strlen := len(response.Body)
 		if err != nil {
 			appErr := appError.CreateAppError(appError.ErrorClassDb,

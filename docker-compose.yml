@@ -134,3 +134,6 @@ networks:
   as-network-strg:
     name: as-strg-network
     attachable: true
+  as-network-cache:
+    name: as-network-cache
+    attachable: true

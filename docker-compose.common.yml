@@ -1,0 +1,59 @@
+version: '3.5'
+services:
+  bin-node:
+    image: 'bitnami/minideb:latest'
+    restart: no
+    networks:
+      - network-dev-services
+
+  mongo-dev:
+    image: 'bitnami/mongodb:latest'
+    restart: no
+    ports:
+      - ${MONGODB_PORT}:27017
+    volumes:
+      - mongo-vol:/bitnami/mongodb
+    networks:
+      - network-dev-services
+
+  postgresql-dev:
+    image: 'bitnami/postgresql:latest'
+    restart: no
+    ports:
+      - ${POSTGRESQL_PORT}:5432
+    environment:
+      TZ: "Europe/Moscow"
+      POSTGRESQL_USERNAME: ${POSTGRESQL_USERNAME}
+      POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD}
+      POSTGRESQL_DATABASE: ${POSTGRESQL_DATABASE}
+    volumes:
+      # /docker-entrypoint-initdb.d точка в которой могут быть запущены пользовательские скрипты. Когда контейнер выполнен первый раз
+      - postgres-vol:/bitnami/postgresql
+    networks:
+      - network-dev-services
+    healthcheck:
+      test: pg_isready -q -d ${POSTGRESQL_DATABASE} -U ${POSTGRESQL_USERNAME}
+      timeout: 12s
+
+  redis-dev:
+    image: bitnami/redis:latest
+    restart: no
+    ports:
+      - ${REDIS_PORT}:6379
+    volumes:
+      - redis-vol:/bitnami/redis/data
+    networks:
+      - network-dev-services
+    healthcheck:
+      test: redis-cli PING
+      timeout: 7s
+
+volumes:
+  mongo-vol:
+  redis-vol:
+  postgres-vol:
+
+networks:
+  network-dev-services:
+    name: network-dev-services
+    attachable: true

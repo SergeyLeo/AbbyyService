@@ -8,6 +8,11 @@ services:
 
   mongo-dev:
     image: "bitnami/mongodb:latest"
+    environment:
+      - MONGODB_USERNAME=${MONGODB_USERNAME}
+      - MONGODB_PASSWORD=${MONGODB_PASSWORD}
+      - MONGODB_DATABASE=${MONGODB_DATABASE}
+      - MONGODB_ROOT_PASSWORD=${MONGODB_ROOT_PASSWORD}
     restart: "no"
     ports:
       - ${MONGODB_PORT}:27017
@@ -38,7 +43,7 @@ services:
   redis-dev:
     image: bitnami/redis:latest
     environment:
-      # ALLOW_EMPTY_PASSWORD is recommended only for development.
+    # ALLOW_EMPTY_PASSWORD is recommended only for development.
       - ALLOW_EMPTY_PASSWORD=yes
       - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
     restart: "no"

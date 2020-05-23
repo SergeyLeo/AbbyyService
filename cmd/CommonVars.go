@@ -1,5 +1,5 @@
 package main
 
 var ConfigPath = ""
-var Env = ""
+var Env = "prod"
 var Version = "1.0"

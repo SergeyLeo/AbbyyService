@@ -8,3 +8,7 @@ import (
 func TestShowTableTypeTokenAddress(t *testing.T) {
 	abbyyJsonParser.ShowTokenAddressType()
 }
+
+func TestConnectToRedisPool(t *testing.T) {
+
+}

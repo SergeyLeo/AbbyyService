@@ -177,7 +177,8 @@ func getAddressTable(address uint32) uint32 {
 func getAddressRow(address uint32) uint32 {
 	table, row, _ := parseAddress(address)
 	// должны совпадать таблица и строка
-	addressRow := (table << 8) | (row << 4) | 0x00
+	addressRow := makeAddress(table, row, 0)
+
 	return addressRow
 }
 
@@ -185,6 +186,7 @@ func getAddressRow(address uint32) uint32 {
 func getAddressCol(address uint32) uint32 {
 	table, _, col := parseAddress(address)
 	// должны совпадать таблица и строка
-	addressCol := (table << 8) | (0x00 << 4) | col
+	addressCol := makeAddress(table, 0, col)
+
 	return addressCol
 }

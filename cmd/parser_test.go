@@ -9,6 +9,6 @@ func TestShowTableTypeTokenAddress(t *testing.T) {
 	abbyyJsonParser.ShowTokenAddressType()
 }
 
-func TestConnectToRedisPool(t *testing.T) {
-
+func TestShowAddressConvert(t *testing.T) {
+	abbyyJsonParser.ShowConvertAddresses()
 }

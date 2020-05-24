@@ -46,6 +46,31 @@ func ShowConvertAddresses() {
 	}
 }
 
+func ShowRealElements() error {
+	wordsAddr := dpAddressRealElements()
+	mapTokens := dpAddressRealToken()
+	console := slCC.InstanceColor(slCC.ColorTypeInfo)
+	for _, addr := range wordsAddr {
+		addrRow := getAddressRow(addr)
+		addrCol := getAddressCol(addr)
+		_, ok := mapTokens[addrRow]
+		if !ok {
+			return fmt.Errorf("for address %02x not found row address", addr)
+		}
+		console.Printf("For address %d found row addr = %d\n",
+			addr,
+			addrRow)
+		_, ok = mapTokens[addrCol]
+		if !ok {
+			return fmt.Errorf("for address %02x not found col address", addr)
+		}
+		console.Printf("For address %d found col addr = %d\n\n",
+			addr,
+			addrCol)
+	}
+	return nil
+}
+
 func dpAddressElements() [][]uint32 {
 	return [][]uint32{
 		{0, 0, 0}, {0, 0, 1}, {0, 0, 2},
@@ -54,5 +79,21 @@ func dpAddressElements() [][]uint32 {
 		{1, 0, 0}, {1, 0, 1}, {1, 0, 2},
 		{1, 1, 0}, {1, 1, 1}, {1, 1, 2},
 		{1, 2, 0}, {1, 2, 1}, {1, 2, 2},
+	}
+}
+
+func dpAddressRealElements() []uint32 {
+	return []uint32{
+		306, 307, 322, 338,
+		370, 371, 290, 291,
+		323, 339, 354, 355,
+	}
+}
+
+func dpAddressRealToken() map[uint32]uint32 {
+	return map[uint32]uint32{
+		274: 274, 275: 275, 289: 289,
+		305: 305, 321: 321, 337: 337,
+		353: 353, 369: 369,
 	}
 }

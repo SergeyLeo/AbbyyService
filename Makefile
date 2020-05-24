@@ -14,7 +14,7 @@ remove:
 	env UID=${UID} docker-compose rm
 
 bash:
-	env UID=${UID} docker-compose exec -u app php-ps-fpm bash
+	docker-compose exec redis-dev bash
 
 network:
 	docker network create --attachable local

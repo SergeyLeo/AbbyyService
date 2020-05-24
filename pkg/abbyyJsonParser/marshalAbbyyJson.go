@@ -170,7 +170,7 @@ func parseTable(table *AbbyyGroup, isVerb bool, words *map[string][]string) []*j
 			l := jlexer.Lexer{
 				Data: json,
 			}
-			value, prefix, _ = marshalAbbyyTableRow(&l)
+			value, prefix, _ = marshalAbbyyTableCell(&l)
 			hasValue := len(value) > 0
 			if !hasValue {
 				continue // нет значения в ячейке анализировать нечего
@@ -205,11 +205,16 @@ func parseTable(table *AbbyyGroup, isVerb bool, words *map[string][]string) []*j
 		}
 	}
 	// соединяем слова и токены. Предварительно обрабатываем токены и слова
+	err := buildTokens()
+	if err != nil {
+		return nil
+	}
 	return nil
 }
 
 // Возвращаем с следующей последовательности
 // - value, prefix, row
+// deprecated
 func marshalAbbyyTableRow(l *jlexer.Lexer) (string, string, string) {
 	var value, prefix, row string
 	if value = jsonsl.MarshalElementString(l, "Value", true); value == "null" {
@@ -224,4 +229,28 @@ func marshalAbbyyTableRow(l *jlexer.Lexer) (string, string, string) {
 
 	// переводим все в нижний регистр
 	return strings.ToLower(value), strings.ToLower(prefix), strings.ToLower(row)
+}
+
+func marshalAbbyyTableCell(l *jlexer.Lexer) (string, string, string) {
+	var value, prefix, row = "", "", ""
+	if !l.IsDelim(123) {
+		return value, prefix, row
+	}
+	l.Skip()
+	if value = jsonsl.MarshalElementString(l, "Value", true); value == "null" {
+		value = ""
+	}
+	if prefix = jsonsl.MarshalElementString(l, "Prefix", true); prefix == "null" {
+		prefix = ""
+	}
+	if row = jsonsl.MarshalElementString(l, "Row", false); row == "null" {
+		row = ""
+	}
+
+	// переводим все в нижний регистр
+	return strings.ToLower(value), strings.ToLower(prefix), strings.ToLower(row)
+}
+
+func buildTokens() error {
+	return nil
 }

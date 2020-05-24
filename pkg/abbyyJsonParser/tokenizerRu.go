@@ -1,5 +1,7 @@
 package abbyyJsonParser
 
+import "kallaur.ru/libs/abbyyservice/pkg/appError"
+
 // файл токенов русского языка для добычи слов
 const (
 	tableOneRow       uint32 = 0x01 // таблица имеет только одну строку
@@ -189,4 +191,20 @@ func getAddressCol(address uint32) uint32 {
 	addressCol := makeAddress(table, 0, col)
 
 	return addressCol
+}
+
+// Линкуем слова и токены
+func linkWordsAndTokens(tokens map[uint32]string, wordsDraft map[uint32]string, isVerb bool) *appError.AppError {
+	// сначала нужно выбрать базовые формы, затем осуществить привязку слов к нему
+	// word - может быть несколько слов через пробел или пробел и запятую
+	// слово может начинаться со звездочки.
+	// в токенах такая же история может наблюдаться
+	for addr, word := range wordsDraft {
+		addrRow := getAddressRow(addr)
+		addrCol := getAddressCol(addr)
+	}
+	return nil
+}
+
+func prepareWord(word string) []string {
 }

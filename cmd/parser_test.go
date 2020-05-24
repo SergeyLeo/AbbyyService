@@ -12,3 +12,10 @@ func TestShowTableTypeTokenAddress(t *testing.T) {
 func TestShowAddressConvert(t *testing.T) {
 	abbyyJsonParser.ShowConvertAddresses()
 }
+
+func TestShowAddressRealConvert(t *testing.T) {
+	err := abbyyJsonParser.ShowRealElements()
+	if err != nil {
+		t.Fail()
+	}
+}

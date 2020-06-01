@@ -27,10 +27,10 @@ services:
     ports:
       - ${POSTGRESQL_PORT}:5432
     environment:
-      TZ: "Europe/Moscow"
       POSTGRESQL_USERNAME: ${POSTGRESQL_USERNAME}
       POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD}
       POSTGRESQL_DATABASE: ${POSTGRESQL_DATABASE}
+      TZ: "Europe/Moscow"
     volumes:
       # /docker-entrypoint-initdb.d точка в которой могут быть запущены пользовательские скрипты. Когда контейнер выполнен первый раз
       - postgres-vol:/bitnami/postgresql
@@ -44,8 +44,7 @@ services:
     image: bitnami/redis:latest
     environment:
     # ALLOW_EMPTY_PASSWORD is recommended only for development.
-      - ALLOW_EMPTY_PASSWORD=yes
-      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
     restart: "no"
     ports:
       - ${REDIS_PORT}:6379

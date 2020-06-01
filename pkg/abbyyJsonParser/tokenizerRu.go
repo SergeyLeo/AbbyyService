@@ -199,12 +199,10 @@ func linkWordsAndTokens(tokens map[uint32]string, wordsDraft map[uint32]string, 
 	// word - может быть несколько слов через пробел или пробел и запятую
 	// слово может начинаться со звездочки.
 	// в токенах такая же история может наблюдаться
-	for addr, word := range wordsDraft {
-		addrRow := getAddressRow(addr)
-		addrCol := getAddressCol(addr)
-	}
+	/*	for addr, word := range wordsDraft {
+			addrRow := getAddressRow(addr)
+			addrCol := getAddressCol(addr)
+		}
+	*/
 	return nil
-}
-
-func prepareWord(word string) []string {
 }

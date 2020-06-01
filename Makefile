@@ -5,7 +5,8 @@ UID := $(shell id -u)
 get-env:
 	cp -a ./.env.example.common ./.env
 up:
-	env UID=${UID} docker-compose up -d --build --remove-orphans --force-recreate
+	source .env
+	docker-compose up -d --build --remove-orphans --force-recreate
 
 stop:
 	env UID=${UID} docker-compose stop

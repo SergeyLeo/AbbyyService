@@ -197,18 +197,23 @@ func getAddressCol(address uint32) uint32 {
 }
 
 // Линкуем слова и токены
-func linkWordsAndTokens(tokens map[uint32]string, wordsDraft map[uint32]string, isVerb bool) *appError.AppError {
+func linkWordsAndTokens(tokens map[uint32]string, wordsDraft map[uint32]string, wordsMap *map[string][]string, isVerb bool) *appError.AppError {
 	// сначала нужно выбрать базовые формы, затем осуществить привязку слов к нему
 	// word - может быть несколько слов через пробел или пробел и запятую
 	// слово может начинаться со звездочки.
 	// в токенах такая же история может наблюдаться
-	for addr, word := range wordsDraft {
+	var tokenLine string
+	var tokensList, wordsList []string
+	var ok bool
+
+	for addr, wordLine := range wordsDraft {
 		addrRow := getAddressRow(addr)
 		addrCol := getAddressCol(addr)
-		draftsTokensRow, ok := tokens[addrRow]
+		tokensListRow, ok := tokens[addrRow]
 		if ok {
 
 		}
+
 	}
 
 	return nil
@@ -224,3 +229,5 @@ func trimmingWords(word string) []string {
 
 	return words
 }
+
+func manageTokens(word string)

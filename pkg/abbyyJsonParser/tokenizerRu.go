@@ -1,6 +1,9 @@
 package abbyyJsonParser
 
-import "kallaur.ru/libs/abbyyservice/pkg/appError"
+import (
+	"kallaur.ru/libs/abbyyservice/pkg/appError"
+	"strings"
+)
 
 // файл токенов русского языка для добычи слов
 const (
@@ -199,10 +202,25 @@ func linkWordsAndTokens(tokens map[uint32]string, wordsDraft map[uint32]string, 
 	// word - может быть несколько слов через пробел или пробел и запятую
 	// слово может начинаться со звездочки.
 	// в токенах такая же история может наблюдаться
-	/*	for addr, word := range wordsDraft {
-			addrRow := getAddressRow(addr)
-			addrCol := getAddressCol(addr)
+	for addr, word := range wordsDraft {
+		addrRow := getAddressRow(addr)
+		addrCol := getAddressCol(addr)
+		draftsTokensRow, ok := tokens[addrRow]
+		if ok {
+
 		}
-	*/
+	}
+
 	return nil
+}
+
+// В json может быть вставлено по два слова вместо одного. Требуется выбросить все лишние пробелы и *
+func trimmingWords(word string) []string {
+	words := strings.Split(word, ",")
+	for idx, word := range words {
+		word = strings.Trim(word, "* ")
+		words[idx] = word
+	}
+
+	return words
 }

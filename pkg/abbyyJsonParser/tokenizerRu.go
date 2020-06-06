@@ -201,37 +201,37 @@ func linkWordsAndTokens(tokens map[uint32]string, wordsDraft map[uint32]string, 
 	// word - может быть несколько слов через пробел или пробел и запятую
 	// слово может начинаться со звездочки.
 	// в токенах такая же история может наблюдаться
-	var tokensList, wordsList []string
 
 	for addr, wordLine := range wordsDraft {
 		addrRow := getAddressRow(addr)
 		addrCol := getAddressCol(addr)
+		tokensList := make([]string, 0)
+		wordsList := make([]string, 0)
 		tokensListRow, ok := tokens[addrRow]
 		if ok {
 			tokenElements := trimmingWords(tokensListRow)
-			copy(tokensList, tokenElements)
+			appendElements(&tokensList, tokenElements)
 		}
 		tokensListCol, ok := tokens[addrCol]
 		if ok {
 			tokenElements := trimmingWords(tokensListCol)
-			copy(tokensList, tokenElements)
+			appendElements(&tokensList, tokenElements)
 		}
 		wordsList = trimmingWords(wordLine)
 		// добавляем слова в общую map
 		for _, word := range wordsList {
 			// проверяем наличие в карте текущего слова
-			_, ok := (*wordsMap)[word]
+			realTokens, ok := (*wordsMap)[word]
 			if ok {
-				copy((*wordsMap)[word], tokensList)
+				appendElements(&realTokens, tokensList)
+				(*wordsMap)[word] = realTokens
 			} else {
-				newTokenList := make([]string, 2, 2)
+				newTokenList := make([]string, len(tokensList))
 				copy(newTokenList, tokensList)
 				(*wordsMap)[word] = newTokenList
 			}
 		}
 	}
-
-	return nil
 }
 
 // В json может быть вставлено по два слова вместо одного. Требуется выбросить все лишние пробелы и *
@@ -243,4 +243,10 @@ func trimmingWords(word string) []string {
 	}
 
 	return words
+}
+
+func appendElements(dst *[]string, src []string) {
+	for _, value := range src {
+		*dst = append(*dst, value)
+	}
 }

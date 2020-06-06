@@ -28,9 +28,9 @@ func main() {
 	var err error
 	var json string
 	//var all []string
+	//var lexem = "мела"
 	var lexem = "прибыль"
 	var lang = 1049
-	//var lexem = "мела"
 	if Env == "dev" {
 		ConfigPath = "./bin"
 	} else {

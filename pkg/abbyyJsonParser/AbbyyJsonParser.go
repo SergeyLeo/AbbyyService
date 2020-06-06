@@ -3,6 +3,7 @@ package abbyyJsonParser
 import (
 	"fmt"
 	"github.com/mailru/easyjson/jlexer"
+	"github.com/satori/go.uuid"
 	"strings"
 )
 
@@ -19,6 +20,7 @@ type AbbyyJsonData struct {
 // Lexem and ParadigmName тоже сохраняем в нижнем регистре
 type AbbyyLexem struct {
 	Lexem        string
+	Uuid         string
 	PaoS         string
 	ParadigmName string
 	Grammar      []string
@@ -82,12 +84,13 @@ func NewAbbyyLexem(lexem string, paos string) *AbbyyLexem {
 	if len(lexem) == 0 || len(paos) == 0 {
 		return nil // не валидные данные для инициализации
 	}
-
+	uuidObj := uuid.NewV4()
 	al := new(AbbyyLexem)
 	al.Lexem = strings.ToLower(lexem)
 	al.PaoS = strings.ToLower(paos)
 	al.Grammar = []string{}
 	al.Words = map[string][]string{}
+	al.Uuid = uuidObj.String()
 
 	return al
 }

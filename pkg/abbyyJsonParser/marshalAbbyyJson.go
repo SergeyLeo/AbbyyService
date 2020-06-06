@@ -204,31 +204,10 @@ func parseTable(table *AbbyyGroup, isVerb bool, words *map[string][]string) []*j
 
 		}
 	}
+
 	// соединяем слова и токены. Предварительно обрабатываем токены и слова
-	err := buildTokens()
-	if err != nil {
-		return nil
-	}
+	linkWordsAndTokens(tokens, wordsDraft, words)
 	return nil
-}
-
-// Возвращаем с следующей последовательности
-// - value, prefix, row
-// deprecated
-func marshalAbbyyTableRow(l *jlexer.Lexer) (string, string, string) {
-	var value, prefix, row string
-	if value = jsonsl.MarshalElementString(l, "Value", true); value == "null" {
-		value = ""
-	}
-	if prefix = jsonsl.MarshalElementString(l, "Prefix", true); prefix == "null" {
-		prefix = ""
-	}
-	if row = jsonsl.MarshalElementString(l, "Row", false); row == "null" {
-		row = ""
-	}
-
-	// переводим все в нижний регистр
-	return strings.ToLower(value), strings.ToLower(prefix), strings.ToLower(row)
 }
 
 func marshalAbbyyTableCell(l *jlexer.Lexer) (string, string, string) {
@@ -249,8 +228,4 @@ func marshalAbbyyTableCell(l *jlexer.Lexer) (string, string, string) {
 
 	// переводим все в нижний регистр
 	return strings.ToLower(value), strings.ToLower(prefix), strings.ToLower(row)
-}
-
-func buildTokens() error {
-	return nil
 }

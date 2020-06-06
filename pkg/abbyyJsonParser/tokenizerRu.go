@@ -1,7 +1,6 @@
 package abbyyJsonParser
 
 import (
-	"kallaur.ru/libs/abbyyservice/pkg/appError"
 	"strings"
 )
 
@@ -197,23 +196,39 @@ func getAddressCol(address uint32) uint32 {
 }
 
 // Линкуем слова и токены
-func linkWordsAndTokens(tokens map[uint32]string, wordsDraft map[uint32]string, wordsMap *map[string][]string, isVerb bool) *appError.AppError {
+func linkWordsAndTokens(tokens map[uint32]string, wordsDraft map[uint32]string, wordsMap *map[string][]string) {
 	// сначала нужно выбрать базовые формы, затем осуществить привязку слов к нему
 	// word - может быть несколько слов через пробел или пробел и запятую
 	// слово может начинаться со звездочки.
 	// в токенах такая же история может наблюдаться
-	var tokenLine string
 	var tokensList, wordsList []string
-	var ok bool
 
 	for addr, wordLine := range wordsDraft {
 		addrRow := getAddressRow(addr)
 		addrCol := getAddressCol(addr)
 		tokensListRow, ok := tokens[addrRow]
 		if ok {
-
+			tokenElements := trimmingWords(tokensListRow)
+			copy(tokensList, tokenElements)
 		}
-
+		tokensListCol, ok := tokens[addrCol]
+		if ok {
+			tokenElements := trimmingWords(tokensListCol)
+			copy(tokensList, tokenElements)
+		}
+		wordsList = trimmingWords(wordLine)
+		// добавляем слова в общую map
+		for _, word := range wordsList {
+			// проверяем наличие в карте текущего слова
+			_, ok := (*wordsMap)[word]
+			if ok {
+				copy((*wordsMap)[word], tokensList)
+			} else {
+				newTokenList := make([]string, 2, 2)
+				copy(newTokenList, tokensList)
+				(*wordsMap)[word] = newTokenList
+			}
+		}
 	}
 
 	return nil
@@ -229,5 +244,3 @@ func trimmingWords(word string) []string {
 
 	return words
 }
-
-func manageTokens(word string)

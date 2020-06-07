@@ -71,6 +71,20 @@ func ShowRealElements() error {
 	return nil
 }
 
+func ViewVerbAddressProperties() {
+	// позиционирование на нулевом элементе таблицы
+	// zeroElement := currentIdxColZero | currentIdxRowZero
+	// нулевой элемент имеет значение
+	zeroElementWithValue := currentIdxColZero | currentIdxRowZero | haveFirstValue
+	// нулевой элемент не имеет значения
+	//zeroElementWithoutValue := zeroElement
+
+	properties := isFirstTable | tableOneRow | paosIsVerb | zeroElementWithValue
+	fmt.Printf(
+		"\nТаблица:    Инфинитив\nЗначение:   %b\n",
+		properties)
+}
+
 func dpAddressElements() [][]uint32 {
 	return [][]uint32{
 		{0, 0, 0}, {0, 0, 1}, {0, 0, 2},

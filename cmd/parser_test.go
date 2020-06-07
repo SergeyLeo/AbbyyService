@@ -19,3 +19,7 @@ func TestShowAddressRealConvert(t *testing.T) {
 		t.Fail()
 	}
 }
+
+func TestViewVerbAddressProperties(t *testing.T) {
+	abbyyJsonParser.ViewVerbAddressProperties()
+}

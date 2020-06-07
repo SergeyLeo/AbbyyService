@@ -17,9 +17,6 @@ const (
 
 type addressTypeFunc func(uint32) uint32
 
-// токены для формирования линеек свойств слова
-var tokens = map[string]uint32{}
-
 var mapProperties map[uint32]addressTypeFunc
 
 // Координата состоит из трех составляющих:
@@ -94,7 +91,8 @@ func parseAddress(address uint32) (uint32, uint32, uint32) {
 // Параметры
 // - isNamed - у таблицы заполнено название
 // - isVerb - мы разбираем лексему глагола
-func isTokenAddress(address uint32, isVerb bool, isNamed bool) bool {
+// - zeroElementHasValue - нулевой элемент имеет значение
+func isTokenAddress(address uint32, isVerb bool, isNamed bool, zeroElementHasValue bool) bool {
 	table, row, col := parseAddress(address)
 	if isVerb {
 		if table+row+col == 0 {
@@ -102,8 +100,14 @@ func isTokenAddress(address uint32, isVerb bool, isNamed bool) bool {
 			return true
 		}
 		if !isNamed {
-			if col == 0 && table > 0 {
-				return true
+			if zeroElementHasValue {
+				if col == 0 && table > 0 {
+					return true
+				}
+			} else {
+				if row == 0 && table > 0 {
+					return true
+				}
 			}
 		}
 	}
@@ -138,7 +142,7 @@ func makeTokenTypesMap() {
 	mapProperties = map[uint32]addressTypeFunc{}
 
 	// инфинитив глагола
-	properties := isFirstTable | tableOneRow | paosIsVerb | currentIdxRowZero | currentIdxColZero
+	properties := isFirstTable | tableOneRow | paosIsVerb | currentIdxRowZero | currentIdxColZero | haveFirstValue
 	mapProperties[properties] = getAddressRow
 
 	// существительное формы ед и множ числа

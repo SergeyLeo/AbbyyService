@@ -187,7 +187,7 @@ func parseTable(table *AbbyyGroup, isVerb bool, words *map[string][]string) []*j
 				isVerb,
 				hasFirstValue,
 				table.Columns == 2)
-			if isTokenAddress(address, isVerb, len(table.Name) > 0) {
+			if isTokenAddress(address, isVerb, len(table.Name) > 0, hasFirstValue) {
 				tokenAddress := getTokenTypeAddress(addressProperties, address)
 				tokens[tokenAddress] = strings.ToLower(value)
 				continue

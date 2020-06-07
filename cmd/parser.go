@@ -29,7 +29,8 @@ func main() {
 	var json string
 	//var all []string
 	//var lexem = "мела"
-	var lexem = "прибыль"
+	//var lexem = "прибыль"
+	var lexem = "победить"
 	var lang = 1049
 	if Env == "dev" {
 		ConfigPath = "./bin"

@@ -78,11 +78,32 @@ func ViewVerbAddressProperties() {
 	zeroElementWithValue := currentIdxColZero | currentIdxRowZero | haveFirstValue
 	// нулевой элемент не имеет значения
 	//zeroElementWithoutValue := zeroElement
+	fmt.Printf("\nРассматриваем json на лексему \"%s\"\n", "победить")
 
-	properties := isFirstTable | tableOneRow | paosIsVerb | zeroElementWithValue
+	properties := tableOneRow | paosIsVerb | zeroElementWithValue
 	fmt.Printf(
-		"\nТаблица:    Инфинитив\nЗначение:   %b\n",
-		properties)
+		"\nТаблица:    Инфинитив\nИндекс = %d\nЗначение:   %b\t %d\n",
+		0, properties, properties)
+
+	properties = paosIsVerb | tableHasName | zeroElementWithValue
+	fmt.Printf(
+		"\nТаблица:    Будущее время\nИндекс = %d\nЗначение:   %b\t %d\n",
+		1, properties, properties)
+
+	properties = paosIsVerb | tableHasName | zeroElementWithValue
+	fmt.Printf(
+		"\nТаблица:    Прошедшее время\nИндекс = %d\nЗначение:   %b\t %d\n",
+		2, properties, properties)
+
+	properties = paosIsVerb | zeroElementWithValue | participleTable
+	fmt.Printf(
+		"\nТаблица:    Таблица причастий\nИндекс = %d\nЗначение:   %b\t %d\n",
+		3, properties, properties)
+
+	properties = paosIsVerb
+	fmt.Printf(
+		"\nТаблица:    Таблица наклонений\nИндекс = %d\nЗначение:   %b\t %d\n",
+		4, properties, properties)
 }
 
 func dpAddressElements() [][]uint32 {

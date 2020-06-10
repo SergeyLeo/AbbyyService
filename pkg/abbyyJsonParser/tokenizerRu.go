@@ -12,7 +12,8 @@ const (
 	currentIdxColZero uint32 = 0x08 // текущий индекс колонки
 	isFirstTable      uint32 = 0x10 // текущая таблица является первой в группе таблиц
 	haveFirstValue    uint32 = 0x20 // есть значение в нулевой строке в нулевой колонке
-	verbRowRule       uint32 = 0x40 // глагол таблица причастий. В каждом ряду токен
+	tableHasName      uint32 = 0x40 // у таблицы есть имя
+	participleTable   uint32 = 0x80 // глагол таблица причастий. В каждом ряду токен
 )
 
 type addressTypeFunc func(uint32) uint32
@@ -72,7 +73,7 @@ func makeAddressProperties(
 		out |= haveFirstValue
 	}
 	if twoColumns {
-		out |= verbRowRule
+		out |= participleTable
 	}
 	return out
 }
@@ -141,8 +142,9 @@ func getTokenTypeAddress(addressProperties uint32, address uint32) uint32 {
 func makeTokenTypesMap() {
 	mapProperties = map[uint32]addressTypeFunc{}
 
+	zeroElementWithValue := currentIdxRowZero | currentIdxColZero | haveFirstValue
 	// инфинитив глагола
-	properties := isFirstTable | tableOneRow | paosIsVerb | currentIdxRowZero | currentIdxColZero | haveFirstValue
+	properties := tableOneRow | paosIsVerb | zeroElementWithValue
 	mapProperties[properties] = getAddressRow
 
 	// существительное формы ед и множ числа
@@ -172,7 +174,7 @@ func makeTokenTypesMap() {
 	mapProperties[properties] = getAddressRow
 
 	// глагол эксклюзивная ситуация когда на причастия идет по 2 колонки
-	properties = paosIsVerb | currentIdxColZero | verbRowRule
+	properties = paosIsVerb | currentIdxColZero | participleTable
 	mapProperties[properties] = getAddressRow
 }
 

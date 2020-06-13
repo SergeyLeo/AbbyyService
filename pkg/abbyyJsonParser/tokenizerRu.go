@@ -51,6 +51,7 @@ func makeAddressProperties(
 	idxCol int,
 	isVerb bool,
 	hasFirstValue bool,
+	nameTable bool,
 	twoColumns bool) uint32 {
 	var out uint32 = 0
 
@@ -72,9 +73,13 @@ func makeAddressProperties(
 	if hasFirstValue {
 		out |= haveFirstValue
 	}
+	if nameTable {
+		out |= tableHasName
+	}
 	if twoColumns {
 		out |= participleTable
 	}
+
 	return out
 }
 
@@ -93,11 +98,16 @@ func parseAddress(address uint32) (uint32, uint32, uint32) {
 // - isNamed - у таблицы заполнено название
 // - isVerb - мы разбираем лексему глагола
 // - zeroElementHasValue - нулевой элемент имеет значение
-func isTokenAddress(address uint32, isVerb bool, isNamed bool, zeroElementHasValue bool) bool {
+func isTokenAddress(address uint32, addressProperties uint32) bool {
 	table, row, col := parseAddress(address)
+
+	isVerb := (addressProperties & paosIsVerb) > 0
+	isNamed := (addressProperties & tableHasName) > 0
+	zeroElementHasValue := (addressProperties & haveFirstValue) > 0
+
 	if isVerb {
-		if table+row+col == 0 {
-			// это токен инфинитив
+		if addressProperties == makePropertyInfinitiv() {
+			// это инфинитив глагола
 			return true
 		}
 		if !isNamed {
@@ -142,9 +152,8 @@ func getTokenTypeAddress(addressProperties uint32, address uint32) uint32 {
 func makeTokenTypesMap() {
 	mapProperties = map[uint32]addressTypeFunc{}
 
-	zeroElementWithValue := currentIdxRowZero | currentIdxColZero | haveFirstValue
 	// инфинитив глагола
-	properties := tableOneRow | paosIsVerb | zeroElementWithValue
+	properties := makePropertyInfinitiv()
 	mapProperties[properties] = getAddressRow
 
 	// существительное формы ед и множ числа
@@ -176,6 +185,14 @@ func makeTokenTypesMap() {
 	// глагол эксклюзивная ситуация когда на причастия идет по 2 колонки
 	properties = paosIsVerb | currentIdxColZero | participleTable
 	mapProperties[properties] = getAddressRow
+}
+
+func makePropertyInfinitiv() uint32 {
+	return tableOneRow | paosIsVerb | makePropertyZeroElementWithValue()
+}
+
+func makePropertyZeroElementWithValue() uint32 {
+	return currentIdxRowZero | currentIdxColZero | haveFirstValue
 }
 
 // Получить адрес токена уровня таблица

@@ -3,6 +3,7 @@ package abbyyJsonParser
 import (
 	"fmt"
 	slCC "kallaur.ru/libs/abbyyservice/pkg/colorConsole"
+	"regexp"
 )
 
 // интерфейс для тестирования функций файла tokinizerRu
@@ -95,7 +96,7 @@ func ViewVerbAddressProperties() {
 		"\nТаблица:    Прошедшее время\nИндекс = %d\nЗначение:   %b\t %d\n",
 		2, properties, properties)
 
-	properties = paosIsVerb | zeroElementWithValue | participleTable
+	properties = paosIsVerb | zeroElementWithValue | tableHasTwoCol
 	fmt.Printf(
 		"\nТаблица:    Таблица причастий\nИндекс = %d\nЗначение:   %b\t %d\n",
 		3, properties, properties)
@@ -104,6 +105,24 @@ func ViewVerbAddressProperties() {
 	fmt.Printf(
 		"\nТаблица:    Таблица наклонений\nИндекс = %d\nЗначение:   %b\t %d\n",
 		4, properties, properties)
+}
+
+func RegExpForWords() error {
+	pattern, err := regexp.Compile(`^[A-Za-zА-Яa-я0-9]+[A-Za-zА-Яa-я0-9_-]+$`)
+	patternAlt, err := regexp.Compile(`[A-Za-zА-Яa-я0-9]+[A-Za-zА-Яa-я0-9_-]+`)
+	if err != nil {
+		return err
+	}
+	for _, token := range dpInputTokens() {
+		word := pattern.Find([]byte(token))
+		if len(word) < 1 && len(token) > 2 {
+			/// пробуем подключить альтернативный паттерн
+			word = patternAlt.Find([]byte(token))
+			fmt.Printf("%s\n", "Применили альтернативный шаблон")
+		}
+		fmt.Printf("input = %s output = %s\n", token, string(word))
+	}
+	return nil
 }
 
 func dpAddressElements() [][]uint32 {
@@ -130,5 +149,16 @@ func dpAddressRealToken() map[uint32]uint32 {
 		274: 274, 275: 275, 289: 289,
 		305: 305, 321: 321, 337: 337,
 		353: 353, 369: 369,
+	}
+}
+
+func dpInputTokens() []string {
+	return []string{
+		"_dasIstVar",
+		"победить",
+		"*победить",
+		"успех",
+		"-",
+		"(-)",
 	}
 }

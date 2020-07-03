@@ -13,7 +13,7 @@ const (
 	isFirstTable      uint32 = 0x10 // текущая таблица является первой в группе таблиц
 	haveFirstValue    uint32 = 0x20 // есть значение в нулевой строке в нулевой колонке
 	tableHasName      uint32 = 0x40 // у таблицы есть имя
-	participleTable   uint32 = 0x80 // глагол таблица причастий. В каждом ряду токен
+	tableHasTwoCol    uint32 = 0x80 // глагол таблица причастий. В каждом ряду токен
 )
 
 type addressTypeFunc func(uint32) uint32
@@ -34,6 +34,18 @@ func makeAddress(table uint32, row uint32, col uint32) uint32 {
 	table++
 	row++
 	col++
+	// в случае не штатной ситуации создаем максимальный индекс, вероятность существования его очень низкая
+	// а значит минимизирована возможность лишних токенов
+	if table > 0x0f || row > 0x0f || col > 0x0f {
+		return 0xfff
+	}
+	// каждую часть адреса смещаем на 4 бита
+	return (table << 8) | (row << 4) | col
+}
+
+// Формирует агрегирующий адрес: таблицы строки колонки.
+// Нужна для реального обнуления.
+func makeAgregateAddress(table uint32, row uint32, col uint32) uint32 {
 	// в случае не штатной ситуации создаем максимальный индекс, вероятность существования его очень низкая
 	// а значит минимизирована возможность лишних токенов
 	if table > 0x0f || row > 0x0f || col > 0x0f {
@@ -77,7 +89,7 @@ func makeAddressProperties(
 		out |= tableHasName
 	}
 	if twoColumns {
-		out |= participleTable
+		out |= tableHasTwoCol
 	}
 
 	return out
@@ -104,10 +116,11 @@ func isTokenAddress(address uint32, addressProperties uint32) bool {
 	isVerb := (addressProperties & paosIsVerb) > 0
 	isNamed := (addressProperties & tableHasName) > 0
 	zeroElementHasValue := (addressProperties & haveFirstValue) > 0
+	isOneRowTable := (addressProperties & tableOneRow) > 0
 
 	if isVerb {
-		if addressProperties == makePropertyInfinitiv() {
-			// это инфинитив глагола
+		if makePropertyInfinitiv(addressProperties) > 0 {
+			// свойствах адреса содержатся все компоненты инфинитива
 			return true
 		}
 		if !isNamed {
@@ -116,18 +129,21 @@ func isTokenAddress(address uint32, addressProperties uint32) bool {
 					return true
 				}
 			} else {
-				if row == 0 && table > 0 {
+				if row == 0 && !isOneRowTable {
+					return true
+				} else if row > 0 && col == 0 && !isOneRowTable {
 					return true
 				}
 			}
 		}
-	}
-	// обрабатываем другие части речи
-	if table == 0 && row == 0 {
-		return true
-	}
-	if row > 0 && col == 0 {
-		return true
+	} else {
+		// обрабатываем другие части речи
+		if table == 0 && row == 0 {
+			return true
+		}
+		if row > 0 && col == 0 {
+			return true
+		}
 	}
 
 	return false
@@ -152,8 +168,12 @@ func getTokenTypeAddress(addressProperties uint32, address uint32) uint32 {
 func makeTokenTypesMap() {
 	mapProperties = map[uint32]addressTypeFunc{}
 
-	// инфинитив глагола
-	properties := makePropertyInfinitiv()
+	// первый инфинитив глагола
+	properties := makePropertyInfinitiv(0) | isFirstTable
+	mapProperties[properties] = getAddressRow
+
+	// последующие инфинитивы глагола
+	properties = makePropertyInfinitiv(0)
 	mapProperties[properties] = getAddressRow
 
 	// существительное формы ед и множ числа
@@ -183,12 +203,22 @@ func makeTokenTypesMap() {
 	mapProperties[properties] = getAddressRow
 
 	// глагол эксклюзивная ситуация когда на причастия идет по 2 колонки
-	properties = paosIsVerb | currentIdxColZero | participleTable
+	properties = paosIsVerb | currentIdxColZero | tableHasTwoCol | haveFirstValue
+	mapProperties[properties] = getAddressRow
+
+	// глагол эксклюзивная ситуация когда на причастия идет по 2 колонки
+	properties = paosIsVerb | currentIdxColZero | currentIdxRowZero | tableHasTwoCol | haveFirstValue
 	mapProperties[properties] = getAddressRow
 }
 
-func makePropertyInfinitiv() uint32 {
-	return tableOneRow | paosIsVerb | makePropertyZeroElementWithValue()
+// Если addressProperties = 0 то возвращаем флаги инфинитива, если > 0 пытаемся найти флаги инфинитва в свойствах адреса
+func makePropertyInfinitiv(addressProperties uint32) uint32 {
+	infinitiv := tableOneRow | tableHasTwoCol | paosIsVerb | makePropertyZeroElementWithValue()
+	if addressProperties == 0 || (addressProperties&infinitiv) == infinitiv {
+		return infinitiv
+	}
+
+	return 0
 }
 
 func makePropertyZeroElementWithValue() uint32 {
@@ -204,18 +234,14 @@ func getAddressTable(address uint32) uint32 {
 func getAddressRow(address uint32) uint32 {
 	table, row, _ := parseAddress(address)
 	// должны совпадать таблица и строка
-	addressRow := makeAddress(table, row, 0)
-
-	return addressRow
+	return makeAgregateAddress(table, row, 0)
 }
 
 // Получить адрес токена уровня колонка
 func getAddressCol(address uint32) uint32 {
 	table, _, col := parseAddress(address)
 	// должны совпадать таблица и строка
-	addressCol := makeAddress(table, 0, col)
-
-	return addressCol
+	return makeAgregateAddress(table, 0, col)
 }
 
 // Линкуем слова и токены
@@ -228,8 +254,16 @@ func linkWordsAndTokens(tokens map[uint32]string, wordsDraft map[uint32]string, 
 	for addr, wordLine := range wordsDraft {
 		addrRow := getAddressRow(addr)
 		addrCol := getAddressCol(addr)
+		addrTable := getAddressTable(addr)
+
 		tokensList := make([]string, 0)
 		wordsList := make([]string, 0)
+
+		tokensTableRow, ok := tokens[addrTable]
+		if ok {
+			tokenElements := trimmingWords(tokensTableRow)
+			appendElements(&tokensList, tokenElements)
+		}
 		tokensListRow, ok := tokens[addrRow]
 		if ok {
 			tokenElements := trimmingWords(tokensListRow)
@@ -240,7 +274,14 @@ func linkWordsAndTokens(tokens map[uint32]string, wordsDraft map[uint32]string, 
 			tokenElements := trimmingWords(tokensListCol)
 			appendElements(&tokensList, tokenElements)
 		}
+		tokensListPoint, ok := tokens[addr]
+		if ok {
+			tokenElements := trimmingWords(tokensListPoint)
+			appendElements(&tokensList, tokenElements)
+		}
+
 		wordsList = trimmingWords(wordLine)
+
 		// добавляем слова в общую map
 		for _, word := range wordsList {
 			// проверяем наличие в карте текущего слова
@@ -261,11 +302,18 @@ func linkWordsAndTokens(tokens map[uint32]string, wordsDraft map[uint32]string, 
 func trimmingWords(word string) []string {
 	words := strings.Split(word, ",")
 	for idx, word := range words {
-		word = strings.Trim(word, "* ")
+		word = strings.Trim(word, "*- ")
 		words[idx] = word
 	}
 
 	return words
+}
+
+func trimmingWordsStr(word string) string {
+	words := trimmingWords(word)
+	wordsString := strings.Join(words, ",")
+
+	return wordsString
 }
 
 func appendElements(dst *[]string, src []string) {

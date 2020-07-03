@@ -158,10 +158,15 @@ func parseTable(table *AbbyyGroup, isVerb bool, words *map[string][]string) []*j
 	var tokens = map[uint32]string{}
 	// сохраняем слова по адресам затем будем привязывать токены
 	var wordsDraft = map[uint32]string{}
+	// переменные уровня таблицы
+	var hasTableName, hasTwoColumns, hasFirstValue, hasValue = false, false, false, false
 
-	if len(table.Name) > 0 {
+	hasTwoColumns = table.Columns == 2
+	hasTableName = len(table.Name) > 0
+	if hasTableName {
 		addr := makeAddress(uint32(table.Idx), 0, 0)
-		tokens[addr] = strings.ToLower(table.Name)
+		addrTable := getAddressTable(addr)
+		tokens[addrTable] = strings.ToLower(table.Name)
 	}
 	// разбираем файл на токены и слова
 	// элемент colsArr - это
@@ -171,11 +176,10 @@ func parseTable(table *AbbyyGroup, isVerb bool, words *map[string][]string) []*j
 				Data: json,
 			}
 			value, prefix, _ = marshalAbbyyTableCell(&l)
-			hasValue := len(value) > 0
+			hasValue = len(value) > 0
 			if !hasValue {
 				continue // нет значения в ячейке анализировать нечего
 			}
-			hasFirstValue := false // есть значение в первой строке в первой колонке
 			if hasValue && rowIdx == 0 && colIdx == 0 {
 				hasFirstValue = true
 			}
@@ -183,18 +187,20 @@ func parseTable(table *AbbyyGroup, isVerb bool, words *map[string][]string) []*j
 			addressProperties := makeAddressProperties(
 				table.Idx,
 				table.Rows,
-				rowIdx, colIdx,
+				rowIdx,
+				colIdx,
 				isVerb,
 				hasFirstValue,
-				len(table.Name) > 0,
-				table.Columns == 2)
+				hasTableName,
+				hasTwoColumns)
+
 			if isTokenAddress(address, addressProperties) {
 				tokenAddress := getTokenTypeAddress(addressProperties, address)
 				tokens[tokenAddress] = strings.ToLower(value)
 				continue
 			} else {
 				// эксклюзивный вариант таблица времен глагола
-				if isVerb && len(table.Name) > 0 {
+				if isVerb && hasTableName {
 					tokens[address] = strings.ToLower(prefix)
 				}
 			}
@@ -202,7 +208,6 @@ func parseTable(table *AbbyyGroup, isVerb bool, words *map[string][]string) []*j
 			if hasValue {
 				wordsDraft[address] = value
 			}
-
 		}
 	}
 
@@ -213,18 +218,27 @@ func parseTable(table *AbbyyGroup, isVerb bool, words *map[string][]string) []*j
 
 func marshalAbbyyTableCell(l *jlexer.Lexer) (string, string, string) {
 	var value, prefix, row = "", "", ""
+
 	if !l.IsDelim(123) {
 		return value, prefix, row
 	}
 	l.Skip()
 	if value = jsonsl.MarshalElementString(l, "Value", true); value == "null" {
 		value = ""
+	} else {
+		value = trimmingWordsStr(value)
 	}
+	// конвертируем значения что бы остались только слова
+
 	if prefix = jsonsl.MarshalElementString(l, "Prefix", true); prefix == "null" {
 		prefix = ""
+	} else {
+		prefix = trimmingWordsStr(prefix)
 	}
 	if row = jsonsl.MarshalElementString(l, "Row", false); row == "null" {
 		row = ""
+	} else {
+		row = trimmingWordsStr(row)
 	}
 
 	// переводим все в нижний регистр

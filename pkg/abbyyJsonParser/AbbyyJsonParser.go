@@ -79,6 +79,10 @@ func (al *AbbyyLexem) CountWords() int {
 	return len(al.Words)
 }
 
+// ********************* ************************
+
+// возвращаем мапу и uuid объекта
+
 // создаем указатель на новый объект AbbyyLexem
 func NewAbbyyLexem(lexem string, paos string) *AbbyyLexem {
 	if len(lexem) == 0 || len(paos) == 0 {

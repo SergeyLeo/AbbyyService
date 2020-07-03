@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/mailru/easyjson/jlexer"
 	"github.com/satori/go.uuid"
+	slRedis "kallaur.ru/libs/abbyyservice/pkg/redis"
+	"strconv"
 	"strings"
 )
 
@@ -46,6 +48,58 @@ func (ajd *AbbyyJsonData) AddLexem(lexemData *AbbyyLexem) {
 	ajd.Lexems = append(ajd.Lexems, lexemData)
 }
 
+// Возвращает идентификатор hash table в редис
+func (ajd *AbbyyJsonData) SaveToRedis() (string, error) {
+	uuidAJD := uuid.NewV4().String()
+	uuidLexemsList := uuid.NewV4().String()
+	lexemUuidsList := make([]string, 0, len(ajd.Lexems))
+
+	hashTableAJDHeader := make(map[string]string, 1)
+	hashTableAJDHeader["userlexem"] = ajd.UserLexem
+	hashTableAJDHeader["lang"] = strconv.Itoa(ajd.Lang)
+	hashTableAJDHeader["countwords"] = strconv.Itoa(ajd.CountWords)
+	hashTableAJDHeader["hasul"] = strconv.FormatBool(ajd.HasUL)
+
+	appErr := slRedis.InitRedisPool()
+	if appErr != nil {
+		return "", fmt.Errorf("code = %s. message = %s", appErr.Code, appErr.Message)
+	}
+	for _, lexem := range ajd.Lexems {
+		err := lexem.saveToRedis()
+		if err != nil {
+			return "", fmt.Errorf("not_save_lexem: %s", lexem.Lexem)
+		}
+		lexemUuidsList = append(lexemUuidsList, lexem.Uuid)
+	}
+	hashTableAJDHeader["lexems"] = uuidLexemsList
+	err := slRedis.HMSetMap(uuidAJD, hashTableAJDHeader)
+	if err != nil {
+		return "", err
+	}
+
+	return uuidAJD, err
+}
+
+// Если объект полностью создан из данных редиса ставим true во втором значении
+// Если вместо указателя на структуру возвращаем nil значит произошла ошибка получения данных
+// Если данные получены полностью то возвращаем указатель на заполненную структуру
+func (ajd *AbbyyJsonData) MakeFromRedis() *AbbyyJsonData {
+	var keyAjdObject string
+	appError := slRedis.InitRedisPool()
+	if appError != nil {
+		return nil
+	}
+	keyAjd, err := slRedis.GetAjdUuid()
+	if err != nil {
+		return nil
+	}
+	err = slRedis.LPop(keyAjd, &keyAjdObject)
+	if err != nil {
+		return nil
+	}
+	return nil
+}
+
 // ****** AbbyyLexem methods ******************
 
 func (al *AbbyyLexem) AddGrammar(grammar string, sep string) int {
@@ -59,6 +113,34 @@ func (al *AbbyyLexem) AddGrammar(grammar string, sep string) int {
 
 func (al *AbbyyLexem) AddParadigmName(name string) {
 	al.ParadigmName = strings.ToLower(name)
+}
+
+// сохраняем слова из лексемы
+func (al *AbbyyLexem) saveWords(uuidHT string) error {
+	htmap := make(map[string]string, 1)
+	for word, tokents := range al.Words {
+		htmap[word] = strings.Join(tokents, ";")
+	}
+	err := slRedis.HMSetMap(uuidHT, htmap)
+
+	return err
+}
+
+func (al *AbbyyLexem) saveToRedis() error {
+	ht := make(map[string]string, 1)
+	uuidWords := uuid.NewV4().String()
+
+	ht["lexem"] = al.Lexem
+	ht["paos"] = al.PaoS
+	ht["paradigmname"] = al.ParadigmName
+	ht["grammar"] = strings.Join(al.Grammar, ";")
+	ht["words"] = uuidWords
+	err := al.saveWords(uuidWords)
+	if err != nil {
+		return fmt.Errorf("words_not_saved")
+	}
+	err = slRedis.HMSetMap(al.Uuid, ht)
+	return err
 }
 
 // Добавляем слово и токены по нему

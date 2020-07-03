@@ -8,7 +8,12 @@ import (
 )
 
 func InitRedisPool() *appError.AppError {
-	/// !!! пока не используем авторизацию
+
+	if pool != nil {
+		// пул уже авторизован
+		return nil
+	}
+
 	config := makePoolConfig()
 	var err error
 

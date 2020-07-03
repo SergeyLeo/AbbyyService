@@ -28,3 +28,11 @@ func getAbbyyJsonListKey() string {
 	}
 	return key
 }
+
+func getAbbyyJsonDataListKey() string {
+	key, err := slConfig.GetValue(keeper.KeyAJDList)
+	if err != nil {
+		return ""
+	}
+	return key
+}

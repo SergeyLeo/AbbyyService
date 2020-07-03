@@ -20,6 +20,8 @@ const (
 	KeyAbbyyJsonList     string = "AS_ABBYY_JSON_LIST_KEY"
 	KeyAbbyyBadWordsList string = "AS_ABBYY_BAD_WORDS_LIST_KEY"
 	KeyAbbyyApiDay       string = "AS_ABBYY_API_DAY_KEY"
+	KeyAJDList           string = "AS_AJD_LIST_IN_REDIS"
+
 	// каталоги инфраструктуры приложения
 	SettingsPath string = "/etc/opt/kallaur.ru"
 	BinaryPath   string = "/opt/kallaur.ru"

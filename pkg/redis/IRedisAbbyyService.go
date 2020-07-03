@@ -38,3 +38,11 @@ func AddJsonData(json string, lexem string) error {
 	key := getAbbyyJsonListKey()
 	return HSet(key, lexem, json)
 }
+
+func GetAjdUuid() (string, error) {
+	key := getAbbyyJsonDataListKey()
+	var value string
+
+	err := LPop(key, &value)
+	return value, err
+}

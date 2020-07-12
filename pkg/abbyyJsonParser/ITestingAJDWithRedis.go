@@ -57,8 +57,7 @@ func factoryAbbyyLexemSubstantiv() (*AbbyyLexem, error) {
 		Groups: nil,
 		Words: map[string][]string{
 			"aкция": {"и.п", "ед.ч"},
-			"акции": {"и.п.", "ед.ч"},
-			"aкции": {"р.п", "ед.ч"},
+			"акции": {"и.п.", "ед.ч", "р.п", "ед.ч"},
 			"акций": {"р.п.", "мн.ч"},
 		},
 	}

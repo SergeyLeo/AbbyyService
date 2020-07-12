@@ -1,10 +1,8 @@
 package redis
 
 import (
-	"fmt"
 	slRedis "github.com/mediocregopher/radix/v3"
 	"kallaur.ru/libs/abbyyservice/pkg/appError"
-	"strings"
 )
 
 func InitRedisPool() *appError.AppError {
@@ -85,14 +83,8 @@ func HSet(hash string, field string, value string) error {
 }
 
 func HMSetMap(hash string, values map[string]string) error {
-	var redisOptionsLine string
-
-	for key, value := range values {
-		redisOptionsLine = fmt.Sprintf("%s %s %s", redisOptionsLine, key, value)
-	}
-	redisOptionsLine = strings.Trim(redisOptionsLine, " ")
 	return pool.Do(
-		slRedis.Cmd(nil, "HMSET", redisOptionsLine))
+		slRedis.FlatCmd(nil, "HMSET", hash, values))
 }
 
 func HGet(hash string, field string, value *string) error {

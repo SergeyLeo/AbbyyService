@@ -43,7 +43,7 @@ type AbbyyGroup struct {
 func (ajd *AbbyyJsonData) AddLexem(lexemData *AbbyyLexem) {
 	count := len(ajd.Lexems)
 	if count == 0 {
-		ajd.Lexems = make([]*AbbyyLexem, 2)
+		ajd.Lexems = make([]*AbbyyLexem, 0, 1)
 	}
 	ajd.Lexems = append(ajd.Lexems, lexemData)
 }
@@ -80,24 +80,14 @@ func (ajd *AbbyyJsonData) SaveToRedis() (string, error) {
 	return uuidAJD, err
 }
 
-// Если объект полностью создан из данных редиса ставим true во втором значении
-// Если вместо указателя на структуру возвращаем nil значит произошла ошибка получения данных
-// Если данные получены полностью то возвращаем указатель на заполненную структуру
-func (ajd *AbbyyJsonData) MakeFromRedis() *AbbyyJsonData {
-	var keyAjdObject string
-	appError := slRedis.InitRedisPool()
-	if appError != nil {
-		return nil
-	}
-	keyAjd, err := slRedis.GetAjdUuid()
-	if err != nil {
-		return nil
-	}
-	err = slRedis.LPop(keyAjd, &keyAjdObject)
-	if err != nil {
-		return nil
-	}
-	return nil
+func (ajd *AbbyyJsonData) ToServiceMap() *map[string]string {
+	properties := make(map[string]string, 1)
+	properties["user_lexem"] = ajd.UserLexem
+	properties["lang"] = string(ajd.Lang)
+	properties["has_ul"] = strconv.FormatBool(ajd.HasUL)
+	properties["count_words"] = string(ajd.CountWords)
+
+	return &properties
 }
 
 // ****** AbbyyLexem methods ******************
@@ -118,8 +108,14 @@ func (al *AbbyyLexem) AddParadigmName(name string) {
 // сохраняем слова из лексемы
 func (al *AbbyyLexem) saveWords(uuidHT string) error {
 	htmap := make(map[string]string, 1)
-	for word, tokents := range al.Words {
-		htmap[word] = strings.Join(tokents, ";")
+	for word, tokens := range al.Words {
+		previos, ok := htmap[word]
+		if ok {
+			allTokens := fmt.Sprintf("%s;%s", previos, strings.Join(tokens, ";"))
+			htmap[word] = allTokens
+		} else {
+			htmap[word] = strings.Join(tokens, ";")
+		}
 	}
 	err := slRedis.HMSetMap(uuidHT, htmap)
 
@@ -224,4 +220,22 @@ func FetchWords(ajd *AbbyyJsonData) []*jlexer.LexerError {
 		}
 	}
 	return nil
+}
+
+func MakeAjdFromRedis(uuids ...string) (*AbbyyJsonData, error) {
+	var uuidAjd string
+	if len(uuids) > 0 {
+		uuidAjd = uuids[0]
+	} else {
+		uuidAjd = ""
+	}
+	// если есть uuid ищем сразу по нему, иначе первый ключ в списке
+	if len(uuidAjd) == 0 {
+		tmpValue, err := slRedis.GetAjdUuid()
+		if err != nil {
+			return nil, err
+		}
+		uuidAjd = tmpValue
+	}
+	return nil, nil
 }

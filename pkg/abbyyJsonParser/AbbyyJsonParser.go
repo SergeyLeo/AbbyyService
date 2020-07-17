@@ -51,7 +51,6 @@ func (ajd *AbbyyJsonData) AddLexem(lexemData *AbbyyLexem) {
 // Возвращает идентификатор hash table в редис
 func (ajd *AbbyyJsonData) SaveToRedis() (string, error) {
 	uuidAJD := uuid.NewV4().String()
-	uuidLexemsList := uuid.NewV4().String()
 	lexemUuidsList := make([]string, 0, len(ajd.Lexems))
 
 	hashTableAJDHeader := make(map[string]string, 1)
@@ -71,7 +70,7 @@ func (ajd *AbbyyJsonData) SaveToRedis() (string, error) {
 		}
 		lexemUuidsList = append(lexemUuidsList, lexem.Uuid)
 	}
-	hashTableAJDHeader["lexems"] = uuidLexemsList
+	hashTableAJDHeader["lexems"] = strings.Join(lexemUuidsList, ";")
 	err := slRedis.HMSetMap(uuidAJD, hashTableAJDHeader)
 	if err != nil {
 		return "", err
@@ -88,6 +87,20 @@ func (ajd *AbbyyJsonData) ToServiceMap() *map[string]string {
 	properties["count_words"] = string(ajd.CountWords)
 
 	return &properties
+}
+
+func (ajd *AbbyyJsonData) validateHeader(data *map[string]string) error {
+	fields := []string{
+		"userlexem", "lang", "countwords", "hasul", "lexems",
+	}
+
+	for _, field := range fields {
+		_, ok := (*data)[field]
+		if !ok {
+			return fmt.Errorf("не найдено поле %s", field)
+		}
+	}
+	return nil
 }
 
 // ****** AbbyyLexem methods ******************
@@ -157,6 +170,20 @@ func (al *AbbyyLexem) CountWords() int {
 	return len(al.Words)
 }
 
+func (al *AbbyyLexem) validate(data *map[string]string) error {
+	fields := []string{
+		"lexem", "paos", "paradigmname", "grammar", "words",
+	}
+
+	for _, field := range fields {
+		_, ok := (*data)[field]
+		if !ok {
+			return fmt.Errorf("не найдено поле %s", field)
+		}
+	}
+	return nil
+}
+
 // ********************* ************************
 
 // возвращаем мапу и uuid объекта
@@ -224,10 +251,17 @@ func FetchWords(ajd *AbbyyJsonData) []*jlexer.LexerError {
 
 func MakeAjdFromRedis(uuids ...string) (*AbbyyJsonData, error) {
 	var uuidAjd string
+
+	header := make(map[string]string)
+
 	if len(uuids) > 0 {
 		uuidAjd = uuids[0]
 	} else {
 		uuidAjd = ""
+	}
+	appErr := slRedis.InitRedisPool()
+	if appErr != nil {
+		return nil, fmt.Errorf(appErr.Error())
 	}
 	// если есть uuid ищем сразу по нему, иначе первый ключ в списке
 	if len(uuidAjd) == 0 {
@@ -237,5 +271,93 @@ func MakeAjdFromRedis(uuids ...string) (*AbbyyJsonData, error) {
 		}
 		uuidAjd = tmpValue
 	}
-	return nil, nil
+	// получаем заголовок ajd
+	err := slRedis.HGetAll(uuidAjd, &header)
+	if err != nil {
+		return nil, err
+	}
+	ajd := new(AbbyyJsonData)
+	err = ajd.validateHeader(&header)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка структуры Abbyy Json Data")
+	}
+	ajd.UserLexem = header["userlexem"]
+	ajd.Lang, err = strconv.Atoi(header["lang"])
+	if err != nil {
+		return nil, fmt.Errorf("ошибка конвертации в число параметра %s", "Lang")
+	}
+	ajd.CountWords, err = strconv.Atoi(header["countwords"])
+	if err != nil {
+		return nil, fmt.Errorf("ошибка конвертации в число параметра %s", "CountWords")
+	}
+	ajd.HasUL, err = strconv.ParseBool(header["hasul"])
+	if err != nil {
+		return nil, fmt.Errorf("ошибка конвертации в булево параметра %s", "HasUl")
+	}
+	for _, key := range strings.Split(header["lexems"], ";") {
+		lexem, err := makeLexemFromRedis(key)
+		if err != nil {
+			return nil, fmt.Errorf("ошибка создания лексемы uuid = %s", key)
+		}
+		ajd.AddLexem(lexem)
+	}
+
+	return ajd, nil
+}
+
+// создаем лексему из редиса
+func makeLexemFromRedis(uuid string) (*AbbyyLexem, error) {
+	appErr := slRedis.InitRedisPool()
+	if appErr != nil {
+		return nil, fmt.Errorf(appErr.Error())
+	}
+	lexem := make(map[string]string, 1)
+	err := slRedis.HGetAll(uuid, &lexem)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка загрузки лексемы")
+	}
+	wordsKey, ok := lexem["words"]
+	if !ok {
+		return nil, fmt.Errorf("в лексеме не найден ключ %s", "words")
+	}
+
+	words, err := makeWordsMapFromRedis(wordsKey)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка загрузки слов по лексеме %s", uuid)
+	}
+	// собираем лексему
+	al := new(AbbyyLexem)
+	err = al.validate(&lexem)
+	if err != nil {
+		return nil, err
+	}
+	al.Uuid = uuid
+	al.Words = words
+	al.Grammar = strings.Split(lexem["grammar"], ";")
+	al.ParadigmName = lexem["paradigmname"]
+	al.PaoS = lexem["paos"]
+	al.Lexem = lexem["lexem"]
+	al.Groups = nil
+
+	return al, nil
+}
+
+// загружаем слова из редиса
+func makeWordsMapFromRedis(uuid string) (map[string][]string, error) {
+	appErr := slRedis.InitRedisPool()
+	if appErr != nil {
+		return nil, fmt.Errorf(appErr.Error())
+	}
+	tmpWords := make(map[string]string, 1)
+	words := make(map[string][]string, 1)
+
+	err := slRedis.HGetAll(uuid, &tmpWords)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка загрузки слов по ключу %s", uuid)
+	}
+	for key, wordLine := range tmpWords {
+		wordsList := strings.Split(wordLine, ";")
+		words[key] = wordsList
+	}
+	return words, nil
 }

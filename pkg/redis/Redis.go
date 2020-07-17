@@ -1,6 +1,7 @@
 package redis
 
 import (
+	"fmt"
 	slRedis "github.com/mediocregopher/radix/v3"
 	"kallaur.ru/libs/abbyyservice/pkg/appError"
 )
@@ -92,7 +93,26 @@ func HGet(hash string, field string, value *string) error {
 	return err
 }
 
-func HGetAll(hash string, values *[]string) error {
-	err := pool.Do(slRedis.Cmd(values, "HGETALL", hash))
+func HGetAll(hash string, values *map[string]string) error {
+	var tmpValues []string
+	var mapKey, mapValue string
+	err := pool.Do(slRedis.Cmd(&tmpValues, "HGETALL", hash))
+	if err != nil {
+		return err
+	}
+	isPaar := len(*values) % 2
+	if isPaar != 0 {
+		// не четное количество элементов. Не корректный ответ
+		return fmt.Errorf("не четное количество элементов")
+	}
+
+	for idx, value := range tmpValues {
+		if idx%2 == 0 {
+			mapKey = value
+		} else {
+			mapValue = value
+			(*values)[mapKey] = mapValue
+		}
+	}
 	return err
 }

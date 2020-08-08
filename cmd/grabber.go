@@ -95,6 +95,7 @@ func runJob() {
 				eh.Report(err)
 			}
 			_ = slRedis.AddBadWord(word)
+			idx++
 			continue
 		}
 		err = slRedis.AddJsonData(response.Body, strings.ToLower(word))
